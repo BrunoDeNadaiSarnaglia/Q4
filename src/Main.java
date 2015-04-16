@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
@@ -9,6 +10,7 @@ import java.util.*;
 public class Main {
 
     private static ArrayList<Sample> trainingSet = new ArrayList<Sample>();
+    private static ArrayList<Sample> testingSet = new ArrayList<Sample>();
     private static HashSet<String> workclassList = new HashSet<String>(Arrays.asList("Private", "Self-emp-not-inc", "Self-emp-inc", "Federal-gov", "Local-gov",
             "State-gov", "Without-pay", "Never-worked"));
     private static HashSet<String> educationList = new HashSet<String>(Arrays.asList("Bachelors", "Some-college", "11th", "HS-grad", "Prof-school", "Assoc-acdm",
@@ -115,21 +117,62 @@ public class Main {
 //        }
     }
 
-    public static void getProbability(int feature, String featureValue, String classLabel){
+    public static Double getP(String classLabel){
+        double sum = 0;
+        for(String str: maximumLikehood.keySet()){
+            sum += maximumLikehood.get(str);
+        }
+        return maximumLikehood.get(classLabel)/sum;
+    }
+
+    public static Double getProbability(int feature, String featureValue, String classLabel){
         Integer n1 = dataStructure.get(classLabel).get(feature).get(featureValue);
         Double n2 = maximumLikehood.get(classLabel);
         Integer n3 = dataStructure.get(classLabel).get(feature).size();
-        System.out.println(n1);
-        System.out.println(n2);
-        System.out.println(n3);
-        System.out.println((n1+1)/(n2+n3));
+//        System.out.println(n1);
+//        System.out.println(n2);
+//        System.out.println(n3);
+//        System.out.println((n1+1)/(n2+n3));
+        return (n1+1)/(n2+n3);
+    }
+
+    public static void readTestFile() throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader("test_data.txt"));
+        String line = null;
+        int sum = 0;
+        int acc = 0;
+        while((line = br.readLine()) != null){
+            String[] features = line.split(",");
+            Sample sample = new Sample(features[0], features[1], features[2],
+                    features[3], features[4], features[5], features[6], features[7], features[8]);
+            testingSet.add(sample);
+            double prod1 = getP("<=50K");
+            for (int i = 0; i < 7; i++) {
+                prod1 *= getProbability(i, features[i], "<=50K");
+            }
+            double prod2 = getP(">50K");
+            for (int i = 0; i < 7; i++) {
+                prod2 *= getProbability(i, features[i], ">50K");
+            }
+            String str;
+            if(prod1 < prod2)
+                str = ">50K";
+            else
+                str = "<=50K";
+            if(str.equals(features[8]))
+                acc++;
+            sum++;
+        }
+        System.out.println(((double)acc)/sum);
     }
 
     public static void main(String[] args) throws IOException {
         readFile();
 
-        System.out.println(maximumLikehood.get("<=50K"));
-        getProbability(1, "Bachelors", ">50K");
+        System.out.println(getP("<=50K"));
+        System.out.println(getProbability(1, "Bachelors", ">50K"));
+
+        readTestFile();
     }
 
 }
